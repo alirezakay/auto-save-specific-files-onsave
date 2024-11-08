@@ -2,7 +2,8 @@
   "name": "autosavespecificfilesonsave",
   "displayName": "AutoSave Specific Files OnSave",
   "description": "To auto-save all files in a specific defined path pattern after saving any files within the workspace",
-  "version": "0.0.1",
+  "version": "0.0.7",
+  "icon": "icon.png",
   "publisher": "AlirezaKay",
   "repository": {
     "type": "git",
@@ -25,7 +26,7 @@
       "type": "object",
       "title": "AutoSaveSpecificFilesOnSave Extension Settings",
       "properties": {
-        "myExtension.filePath": {
+        "autoSaveOnSave.filePath": {
           "type": "string",
           "default": "",
           "description": "The file path to be used by the extension - can be a regex"
@@ -46,7 +47,8 @@
     "pretest": "yarn run compile && yarn run lint",
     "lint": "eslint src",
     "test": "vscode-test",
-    "build": "vsce package"
+    "build": "vsce package",
+    "publish": ""
   },
   "devDependencies": {
     "@types/mocha": "^10.0.9",

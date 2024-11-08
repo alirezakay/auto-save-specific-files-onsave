@@ -17,13 +17,13 @@ Automatically saves specific unsaved-files in your workspace whenever any files 
 
 This extension adds the following setting in VS Code:
 
-- `myExtension.filePath`: Specify the file path or pattern to save automatically when modified (e.g., `"**/*.txt"` to target all `.txt` files in the workspace).
+- `autoSaveOnSave.filePath`: Specify the file path or pattern to save automatically when modified (e.g., `"**/*.txt"` to target all `.txt` files in the workspace).
 
 To configure, open **Settings** (`Ctrl + ,` or `Cmd + ,` on macOS), search for `Auto Save Specific Files OnSave`, and set your preferred path or file pattern.
 
 ## Usage
 
-1. Define the file path or pattern in settings (`myExtension.filePath`).
+1. Define the file path or pattern in settings (`autoSaveOnSave.filePath`).
 2. Any time you save a file in the workspace, every files that matches your pattern, will automatically get saved.
 
 ## Known Issues
@@ -33,7 +33,7 @@ To configure, open **Settings** (`Ctrl + ,` or `Cmd + ,` on macOS), search for `
 
 ## Release Notes
 
-### 1.0.0
+### 0.0.7
 
 - Initial release with support for automatic save on specific files.
 

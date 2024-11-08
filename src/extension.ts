@@ -45,7 +45,7 @@ function getRootFolderPath(): string | undefined {
 }
 
 function getFilePathSetting(): string {
-    const config = vscode.workspace.getConfiguration('myExtension');
+    const config = vscode.workspace.getConfiguration('autoSaveOnSave');
     const filePath = config.get<string>('filePath');
     return filePath || '';
 }

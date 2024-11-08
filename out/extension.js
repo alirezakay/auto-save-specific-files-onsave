@@ -69,7 +69,7 @@ function getRootFolderPath() {
     return undefined;
 }
 function getFilePathSetting() {
-    const config = vscode.workspace.getConfiguration('myExtension');
+    const config = vscode.workspace.getConfiguration('autoSaveOnSave');
     const filePath = config.get('filePath');
     return filePath || '';
 }
