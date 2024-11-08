@@ -2,7 +2,7 @@
   "name": "autosavespecificfilesonsave",
   "displayName": "AutoSave Specific Files OnSave",
   "description": "To auto-save all files in a specific defined path pattern after saving any files within the workspace",
-  "version": "0.0.7",
+  "version": "0.0.9",
   "icon": "icon.png",
   "publisher": "AlirezaKay",
   "repository": {
@@ -30,6 +30,16 @@
           "type": "string",
           "default": "",
           "description": "The file path to be used by the extension - can be a regex"
+        },
+        "autoSaveOnSave.onlyDirtyFiles": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to save all files both dirty(unsaved) and undirty ones within the workspace"
+        },
+        "autoSaveOnSave.delay": {
+          "type": "integer",
+          "default": 0,
+          "description": "Whether to add a delay prior to saving the files. It is a number in milliseconds"
         }
       }
     },

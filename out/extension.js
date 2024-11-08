@@ -36,12 +36,14 @@ async function saveFilesMatchingPattern(rootPath, filePath, globPattern) {
             vscode.window.showInformationMessage(`No files found matching pattern: ${globPattern}`);
             return;
         }
+        const config = vscode.workspace.getConfiguration('autoSaveOnSave');
+        const onlyDirtyFiles = config.get('onlyDirtyFiles');
         // Loop through matched files and save each if it has unsaved changes
         let nlen = 0;
         let f = vscode.Uri.prototype;
         for (const file of files) {
             const document = await vscode.workspace.openTextDocument(file);
-            if (document.isDirty) {
+            if (document.isDirty || !onlyDirtyFiles) {
                 await document.save();
                 if (nlen === 0) {
                     f = file;

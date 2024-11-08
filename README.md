@@ -19,6 +19,10 @@ This extension adds the following setting in VS Code:
 
 - `autoSaveOnSave.filePath`: Specify the file path or pattern to save automatically when modified (e.g., `"**/*.txt"` to target all `.txt` files in the workspace).
 
+- `autoSaveOnSave.onlyDirtyFiles`: Specify if just the dirty (unsaved) files should be saved or not! Sometimes you might need the undirty files to be saved again in some cases.
+
+- `autoSaveOnSave.delay`: Determine if the specified files should be saved with a delay. Its value is an integer specifying the delay time in milliseconds.
+
 To configure, open **Settings** (`Ctrl + ,` or `Cmd + ,` on macOS), search for `Auto Save Specific Files OnSave`, and set your preferred path or file pattern.
 
 ## Usage
