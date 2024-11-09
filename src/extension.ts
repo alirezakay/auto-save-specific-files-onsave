@@ -1,4 +1,4 @@
-import { join } from 'path';
+import { join, matchesGlob } from 'path';
 import * as vscode from 'vscode';
 
 async function saveFilesMatchingPattern(rootPath: string, filePath: string, globPattern: string) {
@@ -82,8 +82,20 @@ export function activate(context: vscode.ExtensionContext) {
         const filePath = getFilePathSetting();
 		const path = join(rootPath, filePath)?filePath:null;
 
+        const config = vscode.workspace.getConfiguration('autoSaveOnSave');
+        const watchPath = config.get<string>('watchPath') || "";
+
 		if (path && document.uri.scheme === "file") {
-            await saveFilesMatchingPattern(rootPath, filePath, path);
+            const docPath = document.uri.fsPath;
+            if (watchPath){
+                const m = matchesGlob(docPath, watchPath);
+                if (m){
+                    await saveFilesMatchingPattern(rootPath, filePath, path);
+                }
+            }
+            else{
+                await saveFilesMatchingPattern(rootPath, filePath, path);
+            }
 		}
 	});
 }

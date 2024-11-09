@@ -23,6 +23,8 @@ This extension adds the following setting in VS Code:
 
 - `autoSaveOnSave.delay`: Determine if the specified files should be saved with a delay. Its value is an integer specifying the delay time in milliseconds.
 
+- `autoSaveOnSave.watchPath`: Specify on which path the saving action should be watched in order that the intended files be saved. i.e. what files should be saved in order to the desired files be saved as well! The default value is the whole path in the workspace. 
+
 To configure, open **Settings** (`Ctrl + ,` or `Cmd + ,` on macOS), search for `Auto Save Specific Files OnSave`, and set your preferred path or file pattern.
 
 ## Usage

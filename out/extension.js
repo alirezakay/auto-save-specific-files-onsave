@@ -38,24 +38,35 @@ async function saveFilesMatchingPattern(rootPath, filePath, globPattern) {
         }
         const config = vscode.workspace.getConfiguration('autoSaveOnSave');
         const onlyDirtyFiles = config.get('onlyDirtyFiles');
-        // Loop through matched files and save each if it has unsaved changes
-        let nlen = 0;
-        let f = vscode.Uri.prototype;
-        for (const file of files) {
-            const document = await vscode.workspace.openTextDocument(file);
-            if (document.isDirty || !onlyDirtyFiles) {
-                await document.save();
-                if (nlen === 0) {
-                    f = file;
+        const delay = config.get('delay') || 0;
+        const do_save = async () => {
+            // Loop through matched files and save each if it has unsaved changes
+            let nlen = 0;
+            let f = vscode.Uri.prototype;
+            for (const file of files) {
+                const document = await vscode.workspace.openTextDocument(file);
+                if (document.isDirty || !onlyDirtyFiles) {
+                    await document.save();
+                    if (nlen === 0) {
+                        f = file;
+                    }
+                    nlen++;
                 }
-                nlen++;
             }
+            if (nlen === 1) {
+                vscode.window.showInformationMessage(`Saved file: ${f.fsPath}`);
+            }
+            else if (nlen > 1) {
+                vscode.window.showInformationMessage(`Saved all ${nlen} unsaved files in ${rootPath} with ${filePath} pattern`);
+            }
+        };
+        if (delay > 0) {
+            setTimeout(async () => {
+                await do_save();
+            }, delay);
         }
-        if (nlen === 1) {
-            vscode.window.showInformationMessage(`Saved file: ${f.fsPath}`);
-        }
-        else if (nlen > 1) {
-            vscode.window.showInformationMessage(`Saved all ${nlen} unsaved files in ${rootPath} with ${filePath} pattern`);
+        else {
+            await do_save();
         }
     }
     catch (error) {
