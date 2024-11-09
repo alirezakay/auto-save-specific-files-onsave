@@ -14,6 +14,7 @@ async function saveFilesMatchingPattern(rootPath: string, filePath: string, glob
         const config = vscode.workspace.getConfiguration('autoSaveOnSave');
         const onlyDirtyFiles = config.get<boolean>('onlyDirtyFiles');
         const delay = config.get<number>('delay') || 0;
+        const times = config.get<number>('times') || 1;
 
         const do_save = async () => {
             // Loop through matched files and save each if it has unsaved changes
@@ -23,6 +24,18 @@ async function saveFilesMatchingPattern(rootPath: string, filePath: string, glob
                 const document = await vscode.workspace.openTextDocument(file);
                 if (document.isDirty ||  !onlyDirtyFiles) {
                     await document.save();
+                    if (times > 1){
+                        let counter = 1;
+                        const interval = setInterval(async () => {
+                            counter++;
+                            if (counter>=times){
+                                clearInterval(interval);
+                            }
+                        }, 10);
+                    }
+                    else {
+                        await document.save();
+                    }
                     if (nlen===0){
                         f = file;
                     }

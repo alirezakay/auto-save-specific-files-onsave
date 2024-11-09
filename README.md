@@ -25,6 +25,8 @@ This extension adds the following setting in VS Code:
 
 - `autoSaveOnSave.watchPath`: Specify on which path the saving action should be watched in order that the intended files be saved. i.e. what files should be saved in order to the desired files be saved as well! The default value is the whole path in the workspace. 
 
+- `autoSaveOnSave.times`: Specify how many times the intended files should be saved! Actually this option may help in some rare cases!!!
+
 To configure, open **Settings** (`Ctrl + ,` or `Cmd + ,` on macOS), search for `Auto Save Specific Files OnSave`, and set your preferred path or file pattern.
 
 ## Usage
@@ -39,7 +41,7 @@ To configure, open **Settings** (`Ctrl + ,` or `Cmd + ,` on macOS), search for `
 
 ## Release Notes
 
-### 0.0.7
+### 0.1.1
 
 - Initial release with support for automatic save on specific files.
 

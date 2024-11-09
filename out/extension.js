@@ -100,8 +100,19 @@ function activate(context) {
         }
         const filePath = getFilePathSetting();
         const path = (0, path_1.join)(rootPath, filePath) ? filePath : null;
+        const config = vscode.workspace.getConfiguration('autoSaveOnSave');
+        const watchPath = config.get('watchPath') || "";
         if (path && document.uri.scheme === "file") {
-            await saveFilesMatchingPattern(rootPath, filePath, path);
+            const docPath = document.uri.fsPath;
+            if (watchPath) {
+                const m = (0, path_1.matchesGlob)(docPath, watchPath);
+                if (m) {
+                    await saveFilesMatchingPattern(rootPath, filePath, path);
+                }
+            }
+            else {
+                await saveFilesMatchingPattern(rootPath, filePath, path);
+            }
         }
     });
 }

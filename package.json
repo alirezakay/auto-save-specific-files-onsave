@@ -2,7 +2,7 @@
   "name": "autosavespecificfilesonsave",
   "displayName": "AutoSave Specific Files OnSave",
   "description": "To auto-save all files in a specific defined path pattern after saving any files within the workspace",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "icon": "icon.png",
   "publisher": "AlirezaKay",
   "repository": {
@@ -45,6 +45,11 @@
           "type": "string",
           "default": "",
           "description": "The path in which files should be watched for saving action in order that the intended files be saved too. The default value is the entire workspace - can be a regex"
+        },
+        "autoSaveOnSave.times": {
+          "type": "integer",
+          "default": 1,
+          "description": "Determine how many times should the desired files be saved! the default value is 1. The maximum is 50"
         }
       }
     },
