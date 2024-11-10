@@ -53,7 +53,7 @@ async function saveFilesMatchingPattern(rootPath: string, filePath: string, glob
             if (restartLnaguageServer && restartLnaguageServer.length){
                 for (const ls of restartLnaguageServer){
                     if (typeof ls === 'string'){
-                        vscode.commands.executeCommand(ls);
+                        await vscode.commands.executeCommand(ls);
                     }
                 }
             }

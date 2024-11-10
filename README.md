@@ -45,7 +45,7 @@ To configure, open **Settings** (`Ctrl + ,` or `Cmd + ,` on macOS), search for `
 
 ## Release Notes
 
-### 0.1.4
+### 0.1.5
 
 - Initial release with support for automatic save on specific files.
 
