@@ -1,9 +1,35 @@
 import { join, matchesGlob } from 'path';
 import * as vscode from 'vscode';
 
-async function touchFile(filePath: string) {
-    const uri = vscode.Uri.file(filePath);
-    await vscode.workspace.fs.writeFile(uri, await vscode.workspace.fs.readFile(uri));
+async function touchFile(filePath: string, when: string) {
+    const config = vscode.workspace.getConfiguration('autoSaveOnSave');
+    const touchFiles = config.get<string>('touchFiles') || "none";
+
+    if (when===touchFiles){
+        const uri = vscode.Uri.file(filePath);
+        await vscode.workspace.fs.writeFile(uri, await vscode.workspace.fs.readFile(uri));
+    }
+}
+
+async function makeFileDirtyWithoutVisibleChange(filePath: string, when: string) {
+    const config = vscode.workspace.getConfiguration('autoSaveOnSave');
+    const makeFilesDirtyOnSave = config.get<string>('makeFilesDirtyBeforeSave') || "none";
+
+    if (when===makeFilesDirtyOnSave){
+        const document = await vscode.workspace.openTextDocument(filePath);
+        const editor = await vscode.window.showTextDocument(document);
+    
+        // Apply a temporary edit that doesn't visually change the document
+        await editor.edit(editBuilder => {
+            const position = new vscode.Position(0, 0);
+            editBuilder.insert(position, "\u200B"); // Zero-width space
+        });
+    
+        // Revert the change by deleting the zero-width space
+        await editor.edit(editBuilder => {
+            editBuilder.delete(new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)));
+        });
+    }
 }
 
 async function saveFilesMatchingPattern(rootPath: string, filePath: string, globPattern: string) {
@@ -30,31 +56,29 @@ async function saveFilesMatchingPattern(rootPath: string, filePath: string, glob
             for (const file of files) {
                 const document = await vscode.workspace.openTextDocument(file);
                 if (document.isDirty ||  !onlyDirtyFiles) {
+                    touchFile(document.uri.fsPath, "before");
+                    makeFileDirtyWithoutVisibleChange(document.uri.fsPath, "before");
                     await document.save();
+                    touchFile(document.uri.fsPath, "after");
+                    makeFileDirtyWithoutVisibleChange(document.uri.fsPath, "after");
                     if (times > 1){
                         let counter = 1;
                         const interval = setInterval(async () => {
+                            touchFile(document.uri.fsPath, "before");
+                            makeFileDirtyWithoutVisibleChange(document.uri.fsPath, "before");
                             await document.save();
+                            touchFile(document.uri.fsPath, "after");
+                            makeFileDirtyWithoutVisibleChange(document.uri.fsPath, "after");
                             counter++;
                             if (counter>=times){
                                 clearInterval(interval);
                             }
-                        }, 5);
-                    }
-                    else {
-                        await document.save();
+                        }, 10);
                     }
                     if (nlen===0){
                         f = file;
                     }
                     nlen ++;
-                }
-            }
-            if (restartLnaguageServer && restartLnaguageServer.length){
-                for (const ls of restartLnaguageServer){
-                    if (typeof ls === 'string'){
-                        await vscode.commands.executeCommand(ls);
-                    }
                 }
             }
             if (showAlerts){
@@ -63,6 +87,13 @@ async function saveFilesMatchingPattern(rootPath: string, filePath: string, glob
                 }
                 else if(nlen>1){
                     vscode.window.showInformationMessage(`Saved all ${nlen} unsaved files in ${rootPath} with ${filePath} pattern`);
+                }
+            }
+            if (restartLnaguageServer && restartLnaguageServer.length){
+                for (const ls of restartLnaguageServer){
+                    if (typeof ls === 'string'){
+                        await vscode.commands.executeCommand(ls);
+                    }
                 }
             }
         };

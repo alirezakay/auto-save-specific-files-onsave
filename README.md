@@ -31,6 +31,11 @@ This extension adds the following setting in VS Code:
 
 - `autoSaveOnSave.showAlerts`: Whether to show the message alert pop-ups in vscode or not.
 
+- `autoSaveOnSave.touchFiles`: Whether to touch the desired files before or after saving. Default value is none.
+
+- `autoSaveOnSave.makeFilesDirtyOnSave`: Whether to make the desired files dirty before or after saving. Default value is none.
+
+
 To configure, open **Settings** (`Ctrl + ,` or `Cmd + ,` on macOS), search for `Auto Save Specific Files OnSave`, and set your preferred path or file pattern.
 
 ## Usage
@@ -45,7 +50,7 @@ To configure, open **Settings** (`Ctrl + ,` or `Cmd + ,` on macOS), search for `
 
 ## Release Notes
 
-### 0.1.5
+### 0.1.7
 
 - Initial release with support for automatic save on specific files.
 
