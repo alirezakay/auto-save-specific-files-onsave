@@ -33,7 +33,7 @@ This extension adds the following setting in VS Code:
 
 - `autoSaveOnSave.touchFiles`: Whether to touch the desired files before or after saving. Default value is none.
 
-- `autoSaveOnSave.makeFilesDirtyOnSave`: Whether to make the desired files dirty before or after saving. Default value is none.
+- `autoSaveOnSave.makeFilesDirtyOnSave`: Whether to make the desired files dirty before saving. This is usefull when you want to save undirty(unsaved) files!
 
 
 To configure, open **Settings** (`Ctrl + ,` or `Cmd + ,` on macOS), search for `Auto Save Specific Files OnSave`, and set your preferred path or file pattern.
@@ -50,7 +50,7 @@ To configure, open **Settings** (`Ctrl + ,` or `Cmd + ,` on macOS), search for `
 
 ## Release Notes
 
-### 0.1.7
+### 0.1.8
 
 - Initial release with support for automatic save on specific files.
 

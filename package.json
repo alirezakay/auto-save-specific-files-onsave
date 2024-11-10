@@ -2,7 +2,7 @@
   "name": "autosavespecificfilesonsave",
   "displayName": "AutoSave Specific Files OnSave",
   "description": "To auto-save all files in a specific defined path pattern after saving any files within the workspace",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "icon": "icon.png",
   "publisher": "AlirezaKay",
   "repository": {
@@ -68,10 +68,9 @@
           "description": "Whether to touch the desired files before or after saving. Default value is none"
         },
         "autoSaveOnSave.makeFilesDirtyOnSave": {
-          "type": "string",
-          "default": "never",
-          "enum": ["never", "before", "after"],
-          "description": "Whether to make the desired files dirty before or after saving. Default value is none"
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to make the desired files dirty before saving. This is usefull when you want to save undirty(unsaved) files!"
         }
       }
     },

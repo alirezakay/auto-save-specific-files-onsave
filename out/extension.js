@@ -27,35 +27,55 @@ exports.activate = activate;
 exports.deactivate = deactivate;
 const path_1 = require("path");
 const vscode = __importStar(require("vscode"));
+let lock = false;
 async function touchFile(filePath, when) {
     const config = vscode.workspace.getConfiguration('autoSaveOnSave');
-    const touchFiles = config.get('touchFiles') || "none";
-    if (when === touchFiles) {
+    const touchFiles = config.get('touchFiles') || "never";
+    if (touchFiles !== "never" && when === touchFiles) {
         const uri = vscode.Uri.file(filePath);
         await vscode.workspace.fs.writeFile(uri, await vscode.workspace.fs.readFile(uri));
     }
 }
-async function makeFileDirtyWithoutVisibleChange(filePath, when) {
+async function closeEditorByUri(uri) {
+    const editor = vscode.window.visibleTextEditors.find((editor) => editor.document.uri.toString() === uri.toString());
+    if (editor) {
+        await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+    }
+}
+async function makeFileDirty(filePath) {
     const config = vscode.workspace.getConfiguration('autoSaveOnSave');
-    const makeFilesDirtyOnSave = config.get('makeFilesDirtyBeforeSave') || "none";
-    if (when === makeFilesDirtyOnSave) {
+    const makeFilesDirtyOnSave = config.get('makeFilesDirtyOnSave');
+    if (makeFilesDirtyOnSave) {
         const document = await vscode.workspace.openTextDocument(filePath);
-        const editor = await vscode.window.showTextDocument(document);
-        // Apply a temporary edit that doesn't visually change the document
+        const es = vscode.window.tabGroups.activeTabGroup.tabs;
+        const curr = vscode.window.activeTextEditor;
+        const editor = await vscode.window.showTextDocument(document, { preview: true, preserveFocus: true, viewColumn: vscode.ViewColumn.Active });
         await editor.edit(editBuilder => {
             const position = new vscode.Position(0, 0);
             editBuilder.insert(position, "\u200B"); // Zero-width space
         });
-        // Revert the change by deleting the zero-width space
         await editor.edit(editBuilder => {
             editBuilder.delete(new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)));
         });
+        await editor.document.save();
+        // @ts-ignore
+        if (!(es.map(e => e.input.uri.fsPath).includes(document.uri.fsPath))) {
+            const uri = vscode.Uri.file(filePath);
+            await closeEditorByUri(uri);
+        }
+        else {
+            if (curr?.document) {
+                await vscode.window.showTextDocument(curr.document, { preview: false, preserveFocus: true, viewColumn: vscode.ViewColumn.Active });
+            }
+        }
+        return true;
     }
+    return false;
 }
 async function saveFilesMatchingPattern(rootPath, filePath, globPattern) {
     try {
         // Find files that match the glob pattern in the workspace
-        const files = await vscode.workspace.findFiles(globPattern);
+        const files = (await vscode.workspace.findFiles(globPattern));
         const len = files.length;
         if (len === 0) {
             vscode.window.showInformationMessage(`No files found matching pattern: ${globPattern}`);
@@ -72,21 +92,31 @@ async function saveFilesMatchingPattern(rootPath, filePath, globPattern) {
             let nlen = 0;
             let f = vscode.Uri.prototype;
             for (const file of files) {
-                const document = await vscode.workspace.openTextDocument(file);
+                // @ts-ignore
+                let document = undefined;
+                try {
+                    document = await vscode.workspace.openTextDocument(file);
+                    if (document.uri.fsPath === vscode.Uri.file(filePath).fsPath) {
+                        continue;
+                    }
+                }
+                catch {
+                    continue;
+                }
                 if (document.isDirty || !onlyDirtyFiles) {
-                    touchFile(document.uri.fsPath, "before");
-                    makeFileDirtyWithoutVisibleChange(document.uri.fsPath, "before");
-                    await document.save();
-                    touchFile(document.uri.fsPath, "after");
-                    makeFileDirtyWithoutVisibleChange(document.uri.fsPath, "after");
+                    await touchFile(document.uri.fsPath, "before");
+                    if (!(await makeFileDirty(document.uri.fsPath))) {
+                        await document.save();
+                    }
+                    await touchFile(document.uri.fsPath, "after");
                     if (times > 1) {
                         let counter = 1;
                         const interval = setInterval(async () => {
-                            touchFile(document.uri.fsPath, "before");
-                            makeFileDirtyWithoutVisibleChange(document.uri.fsPath, "before");
-                            await document.save();
-                            touchFile(document.uri.fsPath, "after");
-                            makeFileDirtyWithoutVisibleChange(document.uri.fsPath, "after");
+                            await touchFile(document.uri.fsPath, "before");
+                            if (!(await makeFileDirty(document.uri.fsPath))) {
+                                await document.save();
+                            }
+                            await touchFile(document.uri.fsPath, "after");
                             counter++;
                             if (counter >= times) {
                                 clearInterval(interval);
@@ -154,10 +184,11 @@ function activate(context) {
             return;
         }
         const filePath = getFilePathSetting();
-        const path = (0, path_1.join)(rootPath, filePath) ? filePath : null;
+        const path = filePath ? filePath : "**/*";
         const config = vscode.workspace.getConfiguration('autoSaveOnSave');
         const watchPath = config.get('watchPath') || "";
-        if (path && document.uri.scheme === "file") {
+        if (!lock && path && document.uri.scheme === "file") {
+            lock = true;
             const docPath = document.uri.fsPath;
             if (watchPath) {
                 const m = (0, path_1.matchesGlob)(docPath, watchPath);
@@ -168,6 +199,7 @@ function activate(context) {
             else {
                 await saveFilesMatchingPattern(rootPath, filePath, path);
             }
+            lock = false;
         }
     });
 }
