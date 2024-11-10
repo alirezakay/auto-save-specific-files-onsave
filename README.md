@@ -27,6 +27,10 @@ This extension adds the following setting in VS Code:
 
 - `autoSaveOnSave.times`: Specify how many times the intended files should be saved! Actually this option may help in some rare cases!!!
 
+- `autoSaveOnSave.restartLnaguageServer`: Specify the restart `commands` for the language servers you want to be restarded after the saving action. e.g. ['typescript.restartTsServer', 'python.analysis.restartLanguageServer'].
+
+- `autoSaveOnSave.showAlerts`: Whether to show the message alert pop-ups in vscode or not.
+
 To configure, open **Settings** (`Ctrl + ,` or `Cmd + ,` on macOS), search for `Auto Save Specific Files OnSave`, and set your preferred path or file pattern.
 
 ## Usage

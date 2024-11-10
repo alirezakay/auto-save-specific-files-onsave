@@ -1,6 +1,11 @@
 import { join, matchesGlob } from 'path';
 import * as vscode from 'vscode';
 
+async function touchFile(filePath: string) {
+    const uri = vscode.Uri.file(filePath);
+    await vscode.workspace.fs.writeFile(uri, await vscode.workspace.fs.readFile(uri));
+}
+
 async function saveFilesMatchingPattern(rootPath: string, filePath: string, globPattern: string) {
     try {
         // Find files that match the glob pattern in the workspace
@@ -15,6 +20,8 @@ async function saveFilesMatchingPattern(rootPath: string, filePath: string, glob
         const onlyDirtyFiles = config.get<boolean>('onlyDirtyFiles');
         const delay = config.get<number>('delay') || 0;
         const times = config.get<number>('times') || 1;
+        const restartLnaguageServer = config.get<Array<string>>('restartLnaguageServer') || [];
+        const showAlerts = config.get<number>('showAlerts');
 
         const do_save = async () => {
             // Loop through matched files and save each if it has unsaved changes
@@ -27,11 +34,12 @@ async function saveFilesMatchingPattern(rootPath: string, filePath: string, glob
                     if (times > 1){
                         let counter = 1;
                         const interval = setInterval(async () => {
+                            await document.save();
                             counter++;
                             if (counter>=times){
                                 clearInterval(interval);
                             }
-                        }, 10);
+                        }, 5);
                     }
                     else {
                         await document.save();
@@ -42,11 +50,20 @@ async function saveFilesMatchingPattern(rootPath: string, filePath: string, glob
                     nlen ++;
                 }
             }
-            if (nlen===1){
-                vscode.window.showInformationMessage(`Saved file: ${f.fsPath}`);
+            if (restartLnaguageServer && restartLnaguageServer.length){
+                for (const ls of restartLnaguageServer){
+                    if (typeof ls === 'string'){
+                        vscode.commands.executeCommand(ls);
+                    }
+                }
             }
-            else if(nlen>1){
-                vscode.window.showInformationMessage(`Saved all ${nlen} unsaved files in ${rootPath} with ${filePath} pattern`);
+            if (showAlerts){
+                if (nlen===1){
+                    vscode.window.showInformationMessage(`Saved file: ${f.fsPath}`);
+                }
+                else if(nlen>1){
+                    vscode.window.showInformationMessage(`Saved all ${nlen} unsaved files in ${rootPath} with ${filePath} pattern`);
+                }
             }
         };
 
@@ -86,7 +103,7 @@ export function activate(context: vscode.ExtensionContext) {
     });
     context.subscriptions.push(disposable);
 	
-	vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {        
+	vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {                
 		const rootPath = getRootFolderPath();
 		if (!rootPath) {
 			vscode.window.showErrorMessage("No root folder is open in the workspace.");

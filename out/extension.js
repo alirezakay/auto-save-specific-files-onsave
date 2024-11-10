@@ -27,6 +27,10 @@ exports.activate = activate;
 exports.deactivate = deactivate;
 const path_1 = require("path");
 const vscode = __importStar(require("vscode"));
+async function touchFile(filePath) {
+    const uri = vscode.Uri.file(filePath);
+    await vscode.workspace.fs.writeFile(uri, await vscode.workspace.fs.readFile(uri));
+}
 async function saveFilesMatchingPattern(rootPath, filePath, globPattern) {
     try {
         // Find files that match the glob pattern in the workspace
@@ -39,6 +43,9 @@ async function saveFilesMatchingPattern(rootPath, filePath, globPattern) {
         const config = vscode.workspace.getConfiguration('autoSaveOnSave');
         const onlyDirtyFiles = config.get('onlyDirtyFiles');
         const delay = config.get('delay') || 0;
+        const times = config.get('times') || 1;
+        const restartLnaguageServer = config.get('restartLnaguageServer') || [];
+        const showAlerts = config.get('showAlerts');
         const do_save = async () => {
             // Loop through matched files and save each if it has unsaved changes
             let nlen = 0;
@@ -47,17 +54,39 @@ async function saveFilesMatchingPattern(rootPath, filePath, globPattern) {
                 const document = await vscode.workspace.openTextDocument(file);
                 if (document.isDirty || !onlyDirtyFiles) {
                     await document.save();
+                    if (times > 1) {
+                        let counter = 1;
+                        const interval = setInterval(async () => {
+                            await document.save();
+                            counter++;
+                            if (counter >= times) {
+                                clearInterval(interval);
+                            }
+                        }, 5);
+                    }
+                    else {
+                        await document.save();
+                    }
                     if (nlen === 0) {
                         f = file;
                     }
                     nlen++;
                 }
             }
-            if (nlen === 1) {
-                vscode.window.showInformationMessage(`Saved file: ${f.fsPath}`);
+            if (restartLnaguageServer && restartLnaguageServer.length) {
+                for (const ls of restartLnaguageServer) {
+                    if (typeof ls === 'string') {
+                        vscode.commands.executeCommand(ls);
+                    }
+                }
             }
-            else if (nlen > 1) {
-                vscode.window.showInformationMessage(`Saved all ${nlen} unsaved files in ${rootPath} with ${filePath} pattern`);
+            if (showAlerts) {
+                if (nlen === 1) {
+                    vscode.window.showInformationMessage(`Saved file: ${f.fsPath}`);
+                }
+                else if (nlen > 1) {
+                    vscode.window.showInformationMessage(`Saved all ${nlen} unsaved files in ${rootPath} with ${filePath} pattern`);
+                }
             }
         };
         if (delay > 0) {
