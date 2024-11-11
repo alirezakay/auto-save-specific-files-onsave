@@ -29,6 +29,8 @@ async function makeFileDirty(filePath: string): Promise<boolean> {
 
     if (makeFilesDirtyOnSave){
         const document = await vscode.workspace.openTextDocument(filePath);
+        console.log(document.getText());
+        
         const es = vscode.window.tabGroups.activeTabGroup.tabs;
         const curr = vscode.window.activeTextEditor;
         const editor = await vscode.window.showTextDocument(document, { preview: false, preserveFocus: true, viewColumn: vscode.ViewColumn.Active });
@@ -137,10 +139,12 @@ async function saveFilesMatchingPattern(rootPath: string, filePath: string, glob
         if (delay>0){
             setTimeout(async () => {
                 await do_save();
+                lock = false;
             }, delay);
         }
         else {
             await do_save();
+            lock = false;
         }
     } 
     catch (error) {
@@ -196,7 +200,6 @@ export function activate(context: vscode.ExtensionContext) {
             else{
                 await saveFilesMatchingPattern(rootPath, filePath, path);
             }
-            lock = false;
 		}
 	});
 }

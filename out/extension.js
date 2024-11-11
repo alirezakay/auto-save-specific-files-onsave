@@ -47,9 +47,10 @@ async function makeFileDirty(filePath) {
     const makeFilesDirtyOnSave = config.get('makeFilesDirtyOnSave');
     if (makeFilesDirtyOnSave) {
         const document = await vscode.workspace.openTextDocument(filePath);
+        console.log(document.getText());
         const es = vscode.window.tabGroups.activeTabGroup.tabs;
         const curr = vscode.window.activeTextEditor;
-        const editor = await vscode.window.showTextDocument(document, { preview: true, preserveFocus: true, viewColumn: vscode.ViewColumn.Active });
+        const editor = await vscode.window.showTextDocument(document, { preview: false, preserveFocus: true, viewColumn: vscode.ViewColumn.Active });
         await editor.edit(editBuilder => {
             const position = new vscode.Position(0, 0);
             editBuilder.insert(position, "\u200B"); // Zero-width space
@@ -148,10 +149,12 @@ async function saveFilesMatchingPattern(rootPath, filePath, globPattern) {
         if (delay > 0) {
             setTimeout(async () => {
                 await do_save();
+                lock = false;
             }, delay);
         }
         else {
             await do_save();
+            lock = false;
         }
     }
     catch (error) {
@@ -199,7 +202,6 @@ function activate(context) {
             else {
                 await saveFilesMatchingPattern(rootPath, filePath, path);
             }
-            lock = false;
         }
     });
 }
