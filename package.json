@@ -2,7 +2,7 @@
   "name": "autosavespecificfilesonsave",
   "displayName": "AutoSave Specific Files OnSave",
   "description": "To auto-save all files in a specific defined path pattern after saving any files within the workspace",
-  "version": "0.1.9",
+  "version": "0.2.1",
   "icon": "icon.png",
   "publisher": "AlirezaKay",
   "repository": {
