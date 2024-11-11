@@ -25,15 +25,13 @@ async function closeEditorByUri(uri: vscode.Uri) {
 async function makeFileDirty(filePath: string): Promise<boolean> {
     const config = vscode.workspace.getConfiguration('autoSaveOnSave');
     const makeFilesDirtyOnSave = config.get<boolean>('makeFilesDirtyOnSave');
-    
 
     if (makeFilesDirtyOnSave){
         const document = await vscode.workspace.openTextDocument(filePath);
-        console.log(document.getText());
         
         const es = vscode.window.tabGroups.activeTabGroup.tabs;
         const curr = vscode.window.activeTextEditor;
-        const editor = await vscode.window.showTextDocument(document, { preview: false, preserveFocus: true, viewColumn: vscode.ViewColumn.Active });
+        const editor = await vscode.window.showTextDocument(document, { preview: true, preserveFocus: true, viewColumn: vscode.ViewColumn.Active });
         
         await editor.edit(editBuilder => {
             const position = new vscode.Position(0, 0);
@@ -47,7 +45,7 @@ async function makeFileDirty(filePath: string): Promise<boolean> {
         await editor.document.save();
 
         // @ts-ignore
-        if (!(es.map(e => e.input.uri.fsPath).includes(document.uri.fsPath))){
+        if (!(es.map(e => e.inpute?e.input.uri.fsPath:null).includes(document.uri.fsPath))){
             const uri = vscode.Uri.file(filePath);
             await closeEditorByUri(uri);
         }
@@ -63,14 +61,6 @@ async function makeFileDirty(filePath: string): Promise<boolean> {
 
 async function saveFilesMatchingPattern(rootPath: string, filePath: string, globPattern: string) {
     try {
-        // Find files that match the glob pattern in the workspace
-        const files = (await vscode.workspace.findFiles(globPattern));
-        const len = files.length;
-        if (len === 0) {
-            vscode.window.showInformationMessage(`No files found matching pattern: ${globPattern}`);
-            return;
-        }
-
         const config = vscode.workspace.getConfiguration('autoSaveOnSave');
         const onlyDirtyFiles = config.get<boolean>('onlyDirtyFiles');
         const delay = config.get<number>('delay') || 0;
@@ -79,6 +69,14 @@ async function saveFilesMatchingPattern(rootPath: string, filePath: string, glob
         const showAlerts = config.get<number>('showAlerts');        
 
         const do_save = async () => {
+            // Find files that match the glob pattern in the workspace
+            const files = (await vscode.workspace.findFiles(globPattern));
+            const len = files.length;
+            if (len === 0) {
+                vscode.window.showInformationMessage(`No files found matching pattern: ${globPattern}`);
+                return;
+            }
+
             // Loop through matched files and save each if it has unsaved changes
             let nlen = 0;
             let f = vscode.Uri.prototype;
@@ -135,21 +133,25 @@ async function saveFilesMatchingPattern(rootPath: string, filePath: string, glob
                 }
             }
         };
-
-        if (delay>0){
-            setTimeout(async () => {
+        try{
+            if (delay>0){
+                setTimeout(async () => {
+                    await do_save();
+                    lock = false;
+                }, delay);
+            }
+            else {
                 await do_save();
                 lock = false;
-            }, delay);
-        }
-        else {
-            await do_save();
+            }
+        } catch {
             lock = false;
         }
     } 
     catch (error) {
         console.error(`Error saving files matching pattern ${globPattern}:`, error);
         vscode.window.showErrorMessage(`Failed to save files matching pattern ${globPattern}`);
+        lock = false;
     }
 }
 
@@ -174,7 +176,7 @@ export function activate(context: vscode.ExtensionContext) {
     });
     context.subscriptions.push(disposable);
 	
-	vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {                
+	vscode.workspace.onDidSaveTextDocument(async (document: vscode.TextDocument) => {                        
 		const rootPath = getRootFolderPath();
 		if (!rootPath) {
 			vscode.window.showErrorMessage("No root folder is open in the workspace.");
@@ -182,8 +184,6 @@ export function activate(context: vscode.ExtensionContext) {
 		}
         const filePath = getFilePathSetting();
 		const path = filePath?filePath:"**/*";
-        
-        
 
         const config = vscode.workspace.getConfiguration('autoSaveOnSave');
         const watchPath = config.get<string>('watchPath') || "";

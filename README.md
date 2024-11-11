@@ -50,7 +50,7 @@ To configure, open **Settings** (`Ctrl + ,` or `Cmd + ,` on macOS), search for `
 
 ## Release Notes
 
-### 0.2.1
+### 0.2.2
 
 - Initial release with support for automatic save on specific files.
 
