@@ -31,7 +31,7 @@ async function makeFileDirty(filePath: string): Promise<boolean> {
         const document = await vscode.workspace.openTextDocument(filePath);
         const es = vscode.window.tabGroups.activeTabGroup.tabs;
         const curr = vscode.window.activeTextEditor;
-        const editor = await vscode.window.showTextDocument(document, { preview: true, preserveFocus: true, viewColumn: vscode.ViewColumn.Active });
+        const editor = await vscode.window.showTextDocument(document, { preview: false, preserveFocus: true, viewColumn: vscode.ViewColumn.Active });
         
         await editor.edit(editBuilder => {
             const position = new vscode.Position(0, 0);
