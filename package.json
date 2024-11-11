@@ -1,8 +1,8 @@
 {
-  "name": "zautosavespecificfilesonsave",
-  "displayName": "zAutoSave Specific Files OnSave",
-  "description": "To auto-save all files in a specific defined path pattern after saving any files within the workspace",
-  "version": "0.2.3",
+  "name": "autosavespecificfilesonsave",
+  "displayName": "AutoSave Specific Files OnSave",
+  "description": "To auto-save specific files in a specific defined path-pattern after saving any specific files within the workspace",
+  "version": "0.3.0",
   "icon": "icon.png",
   "publisher": "AlirezaKay",
   "repository": {
@@ -24,7 +24,7 @@
   "contributes": {
     "configuration": {
       "type": "object",
-      "title": "AutoSaveSpecificFilesOnSave Extension Settings",
+      "title": "AutoSave SpecificFiles OnSave Extension Settings",
       "properties": {
         "autoSaveOnSave.filePath": {
           "type": "string",

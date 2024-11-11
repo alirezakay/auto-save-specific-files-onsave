@@ -22,12 +22,15 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.activate = activate;
 exports.deactivate = deactivate;
+const fs_1 = __importDefault(require("fs"));
 const path_1 = require("path");
 const vscode = __importStar(require("vscode"));
-let lock = false;
 async function touchFile(filePath, when) {
     const config = vscode.workspace.getConfiguration('autoSaveOnSave');
     const touchFiles = config.get('touchFiles') || "never";
@@ -42,41 +45,64 @@ async function closeEditorByUri(uri) {
         await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
     }
 }
+function isWritable(filePath) {
+    try {
+        fs_1.default.accessSync(filePath, fs_1.default.constants.W_OK);
+        return true; // Writable
+    }
+    catch (err) {
+        return false; // Not writable or locked by another process
+    }
+}
+function isFileLocked(filePath) {
+    try {
+        const fileDescriptor = fs_1.default.openSync(filePath, 'r+'); // Try opening in read-write mode
+        fs_1.default.closeSync(fileDescriptor); // Close immediately if successful
+        return false; // Not locked
+    }
+    catch (err) {
+        if (err.code === 'EBUSY' || err.code === 'EACCES' || err.code === 'EPERM') {
+            return true; // File is locked by another process
+        }
+        throw err; // Other errors
+    }
+}
 async function makeFileDirty(filePath) {
     const config = vscode.workspace.getConfiguration('autoSaveOnSave');
     const makeFilesDirtyOnSave = config.get('makeFilesDirtyOnSave');
     if (makeFilesDirtyOnSave) {
-        // const document = await vscode.workspace.openTextDocument(filePath);
+        const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+        while (isFileLocked(filePath)) {
+            await delay(25);
+        }
+        const fsContent = fs_1.default.readFileSync(filePath);
+        // const fsText = fsContent.toString().trim();
+        // const document = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
         const es = vscode.window.tabGroups.activeTabGroup.tabs;
         const curr = vscode.window.activeTextEditor;
-        // const editor = await vscode.window.showTextDocument(document, { preview: true, preserveFocus: true, viewColumn: vscode.ViewColumn.Active });
         const edit = new vscode.WorkspaceEdit();
-        edit.insert(vscode.Uri.file(filePath), new vscode.Position(0, 0), "\u200B");
+        edit.createFile(vscode.Uri.file(filePath), {
+            contents: fsContent,
+            overwrite: true,
+            ignoreIfExists: false
+        });
         await vscode.workspace.applyEdit(edit);
-        edit.delete(vscode.Uri.file(filePath), new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)));
-        await vscode.workspace.applyEdit(edit);
-        // await editor.edit(editBuilder => {
-        //     const position = new vscode.Position(0, 0);
-        //     editBuilder.insert(position, "\u200B"); // Zero-width space
-        // });
-        // await editor.edit(editBuilder => {
-        //     editBuilder.delete(new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)));
-        // });
+        vscode.workspace.save(vscode.Uri.file(filePath));
         // @ts-ignore
-        if (!(es.map(e => e.inpute ? e.input.uri.fsPath : null).includes(document.uri.fsPath))) {
+        if (!(es.map(e => e.input ? e.input.uri.fsPath : null).includes(vscode.Uri.file(filePath).fsPath))) {
             const uri = vscode.Uri.file(filePath);
             await closeEditorByUri(uri);
         }
         else {
             if (curr?.document) {
-                await vscode.window.showTextDocument(curr.document, { preview: false, preserveFocus: true, viewColumn: vscode.ViewColumn.Active });
+                // await vscode.window.showTextDocument(curr.document, { preview: false, preserveFocus: true, viewColumn: vscode.ViewColumn.Active });
             }
         }
         return true;
     }
     return false;
 }
-async function saveFilesMatchingPattern(rootPath, filePath, globPattern) {
+async function saveFilesMatchingPattern(context, sourcePath, filePath, globPattern) {
     try {
         const config = vscode.workspace.getConfiguration('autoSaveOnSave');
         const onlyDirtyFiles = config.get('onlyDirtyFiles');
@@ -100,7 +126,7 @@ async function saveFilesMatchingPattern(rootPath, filePath, globPattern) {
                 let document = undefined;
                 try {
                     document = await vscode.workspace.openTextDocument(file);
-                    if (document.uri.fsPath === vscode.Uri.file(filePath).fsPath) {
+                    if (document.uri.fsPath === sourcePath) {
                         continue;
                     }
                 }
@@ -125,7 +151,7 @@ async function saveFilesMatchingPattern(rootPath, filePath, globPattern) {
                             if (counter >= times) {
                                 clearInterval(interval);
                             }
-                        }, 10);
+                        }, 25);
                     }
                     if (nlen === 0) {
                         f = file;
@@ -138,7 +164,7 @@ async function saveFilesMatchingPattern(rootPath, filePath, globPattern) {
                     vscode.window.showInformationMessage(`Saved file: ${f.fsPath}`);
                 }
                 else if (nlen > 1) {
-                    vscode.window.showInformationMessage(`Saved all ${nlen} unsaved files in ${rootPath} with ${filePath} pattern`);
+                    vscode.window.showInformationMessage(`Saved all ${nlen} unsaved files with ${globPattern} pattern`);
                 }
             }
             if (restartLnaguageServer && restartLnaguageServer.length) {
@@ -152,23 +178,34 @@ async function saveFilesMatchingPattern(rootPath, filePath, globPattern) {
         try {
             if (delay > 0) {
                 setTimeout(async () => {
-                    await do_save();
-                    lock = false;
+                    try {
+                        await do_save();
+                    }
+                    catch (error) {
+                        console.error(`[Error]3 saving files matching pattern ${globPattern}:`, error);
+                        vscode.window.showErrorMessage(`Failed to save files matching pattern ${globPattern}`);
+                    }
+                    finally {
+                        context.globalState.update("lock", false);
+                    }
                 }, delay);
             }
             else {
                 await do_save();
-                lock = false;
+                context.globalState.update("lock", false);
+                const lock = context.globalState.get("lock");
             }
         }
-        catch {
-            lock = false;
+        catch (error) {
+            context.globalState.update("lock", false);
+            console.error(`[Error]2 saving files matching pattern ${globPattern}:`, error);
+            vscode.window.showErrorMessage(`Failed to save files matching pattern ${globPattern}`);
         }
     }
     catch (error) {
-        console.error(`Error saving files matching pattern ${globPattern}:`, error);
+        context.globalState.update("lock", false);
+        console.error(`[Error]1 saving files matching pattern ${globPattern}:`, error);
         vscode.window.showErrorMessage(`Failed to save files matching pattern ${globPattern}`);
-        lock = false;
     }
 }
 function getRootFolderPath() {
@@ -184,6 +221,7 @@ function getFilePathSetting() {
     return filePath || '';
 }
 function activate(context) {
+    context.globalState.update("lock", false);
     let disposable = vscode.commands.registerCommand('extension.saveAllFiles', async () => {
         // Save all open files
         await vscode.workspace.saveAll();
@@ -199,18 +237,26 @@ function activate(context) {
         const path = filePath ? filePath : "**/*";
         const config = vscode.workspace.getConfiguration('autoSaveOnSave');
         const watchPath = config.get('watchPath') || "";
+        const lock = context.globalState.get("lock");
         if (!lock && path && document.uri.scheme === "file") {
-            lock = true;
+            const sourcePath = document.uri.fsPath;
+            context.globalState.update("lock", true);
             const docPath = document.uri.fsPath;
             if (watchPath) {
                 const m = (0, path_1.matchesGlob)(docPath, watchPath);
                 if (m) {
-                    await saveFilesMatchingPattern(rootPath, filePath, path);
+                    await saveFilesMatchingPattern(context, sourcePath, filePath, path);
+                }
+                else {
+                    context.globalState.update("lock", false);
                 }
             }
             else {
-                await saveFilesMatchingPattern(rootPath, filePath, path);
+                await saveFilesMatchingPattern(context, sourcePath, filePath, path);
             }
+        }
+        else if (lock) {
+            vscode.window.showErrorMessage(`LOCKED! Failed to save files matching pattern ${filePath}`);
         }
     });
 }
