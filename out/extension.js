@@ -46,18 +46,22 @@ async function makeFileDirty(filePath) {
     const config = vscode.workspace.getConfiguration('autoSaveOnSave');
     const makeFilesDirtyOnSave = config.get('makeFilesDirtyOnSave');
     if (makeFilesDirtyOnSave) {
-        const document = await vscode.workspace.openTextDocument(filePath);
+        // const document = await vscode.workspace.openTextDocument(filePath);
         const es = vscode.window.tabGroups.activeTabGroup.tabs;
         const curr = vscode.window.activeTextEditor;
-        const editor = await vscode.window.showTextDocument(document, { preview: true, preserveFocus: true, viewColumn: vscode.ViewColumn.Active });
-        await editor.edit(editBuilder => {
-            const position = new vscode.Position(0, 0);
-            editBuilder.insert(position, "\u200B"); // Zero-width space
-        });
-        await editor.edit(editBuilder => {
-            editBuilder.delete(new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)));
-        });
-        await editor.document.save();
+        // const editor = await vscode.window.showTextDocument(document, { preview: true, preserveFocus: true, viewColumn: vscode.ViewColumn.Active });
+        const edit = new vscode.WorkspaceEdit();
+        edit.insert(vscode.Uri.file(filePath), new vscode.Position(0, 0), "\u200B");
+        await vscode.workspace.applyEdit(edit);
+        edit.delete(vscode.Uri.file(filePath), new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)));
+        await vscode.workspace.applyEdit(edit);
+        // await editor.edit(editBuilder => {
+        //     const position = new vscode.Position(0, 0);
+        //     editBuilder.insert(position, "\u200B"); // Zero-width space
+        // });
+        // await editor.edit(editBuilder => {
+        //     editBuilder.delete(new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)));
+        // });
         // @ts-ignore
         if (!(es.map(e => e.inpute ? e.input.uri.fsPath : null).includes(document.uri.fsPath))) {
             const uri = vscode.Uri.file(filePath);
