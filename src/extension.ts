@@ -172,24 +172,22 @@ async function saveFilesMatchingPattern(context: vscode.ExtensionContext, source
                         vscode.window.showErrorMessage(`Failed to save files matching pattern ${globPattern}`);
                     }
                     finally{
-                        context.globalState.update("lock", false);
+                        context.workspaceState.update("lock", false);
                     }
                 }, delay);
             }
             else {
                 await do_save();
-                context.globalState.update("lock", false);
-                const lock = context.globalState.get("lock");
-                
+                context.workspaceState.update("lock", false);
             }
         } catch(error) {
-            context.globalState.update("lock", false);
+            context.workspaceState.update("lock", false);
             console.error(`[Error]2 saving files matching pattern ${globPattern}:`, error);
             vscode.window.showErrorMessage(`Failed to save files matching pattern ${globPattern}`);
         }
     } 
     catch (error) {
-        context.globalState.update("lock", false);
+        context.workspaceState.update("lock", false);
         console.error(`[Error]1 saving files matching pattern ${globPattern}:`, error);
         vscode.window.showErrorMessage(`Failed to save files matching pattern ${globPattern}`);
     }
@@ -210,7 +208,7 @@ function getFilePathSetting(): string {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-    context.globalState.update("lock", false);
+    context.workspaceState.update("lock", false);
 	let disposable = vscode.commands.registerCommand('extension.saveAllFiles', async () => {
         // Save all open files
         await vscode.workspace.saveAll();
@@ -229,10 +227,10 @@ export function activate(context: vscode.ExtensionContext) {
         const config = vscode.workspace.getConfiguration('autoSaveOnSave');
         const watchPath = config.get<string>('watchPath') || "";
 
-        const lock = context.globalState.get("lock");
+        const lock = context.workspaceState.get("lock");
 		if (!lock && path && document.uri.scheme === "file") {
             const sourcePath = document.uri.fsPath;
-            context.globalState.update("lock", true);
+            context.workspaceState.update("lock", true);
             const docPath = document.uri.fsPath;
             
             if (watchPath){
@@ -241,7 +239,7 @@ export function activate(context: vscode.ExtensionContext) {
                     await saveFilesMatchingPattern(context, sourcePath, filePath, path);
                 }
                 else{
-                    context.globalState.update("lock", false);
+                    context.workspaceState.update("lock", false);
                 }
             }
             else{

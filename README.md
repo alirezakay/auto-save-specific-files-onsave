@@ -50,7 +50,7 @@ To configure, open **Settings** (`Ctrl + ,` or `Cmd + ,` on macOS), search for `
 
 ## Release Notes
 
-### 0.3.0
+### 0.3.1
 
 - Fixed release.
 

@@ -4,6 +4,6 @@ All notable changes to the "autosavespecificfilesonsave" extension will be docum
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
-## 0.3.0
+## 0.3.1
 
 - Fixed release
